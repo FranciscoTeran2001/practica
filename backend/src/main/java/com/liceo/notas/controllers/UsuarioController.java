@@ -2,13 +2,13 @@ package com.liceo.notas.controllers;
 
 import com.liceo.notas.dtos.UsuarioDTO;
 import com.liceo.notas.services.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Controlador REST para la gestión de usuarios del sistema.
@@ -31,7 +31,7 @@ public class UsuarioController {
      * @apiNote El DTO debe incluir los datos obligatorios del usuario (nombre, email, etc.)
      */
     @PostMapping
-    public ResponseEntity<UsuarioDTO> crear(@RequestBody UsuarioDTO usuarioDTO) {
+    public ResponseEntity<UsuarioDTO> crear(@Valid @RequestBody UsuarioDTO usuarioDTO) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(usuarioService.crearUsuario(usuarioDTO));
     }
