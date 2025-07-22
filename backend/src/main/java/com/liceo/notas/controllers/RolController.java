@@ -28,7 +28,9 @@ public class RolController {
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y el rol creado
      * @apiNote El DTO debe incluir al menos el nombre del rol
+     * -Administradores pueden crear roles.
      */
+
     @PostMapping
     public ResponseEntity<RolDTO> crear(@RequestBody RolDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -85,6 +87,7 @@ public class RolController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el rol actualizado si existe
      *         - Código 404 (NOT FOUND) si el rol no existe
+     *         -Administradores pueden actualizar roles.
      */
     @PutMapping("/{id}")
     public ResponseEntity<RolDTO> actualizar(
@@ -103,6 +106,7 @@ public class RolController {
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      *         - Código 404 (NOT FOUND) si el rol no existe
      * @apiNote La eliminación fallará si el rol está asignado a usuarios
+     * -Administradores pueden eliminar roles.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

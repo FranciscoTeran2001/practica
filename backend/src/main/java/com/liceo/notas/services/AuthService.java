@@ -6,9 +6,13 @@ import com.liceo.notas.repositories.UsuarioRepository;
 import com.liceo.notas.services.ServiceImpl.UsuarioServiceImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,8 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import javax.crypto.SecretKey;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Servicio para gestionar la autenticación de usuarios del sistema.
@@ -55,6 +61,8 @@ public class AuthService {
      */
     @Value("${jwt.expirationMs:86400000}") // 24 horas por defecto
     private int jwtExpirationMs;
+
+    private final String baseUrlFront = "http://localhost:5173";
 
     @Autowired
     private UsuarioServiceImpl usuarioService;
@@ -107,7 +115,8 @@ public class AuthService {
      * @param request Objeto {@link LoginRequest} con nickname y contraseña del usuario
      * @return {@link LoginResponse} con resultado del proceso de autenticación
      */
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, HttpServletResponse response)
+    {
         Optional<Usuario> usuarioOpt = usuarioRepository.findByIdUsuario(request.getIdUsuario());
         Usuario usuarioEmail = usuarioOpt.get();
         // Validación básica de los campos de entrada
@@ -147,7 +156,17 @@ public class AuthService {
 
         // Generar token JWT
         String token = generateJwtToken(usuario);
-        return new LoginResponse(true, "Autenticación exitosa", token);
+        ResponseCookie cookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofMinutes(30))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return new LoginResponse(true, "Autenticación exitosa", token,usuario.getIdUsuario());
     }
 
     /**
@@ -182,6 +201,7 @@ public class AuthService {
 
             // En verifyMfaCode():
             String token = generateJwtToken(usuario); // Primero genera el token
+
             usuario.setMfaSecret(null);              // Luego limpia el código
             usuario.setMfaCodeExpiration(null);
             usuarioRepository.save(usuario);
@@ -222,7 +242,7 @@ public class AuthService {
 
         emailService.sendMfaCode(usuario.getEmail(), mfaCode);
 
-        return new LoginResponse(false, "Se ha enviado un código de verificación a tu email", null);
+        return new LoginResponse(false, "Se ha enviado un código de verificación a tu email", null,null);
     }
 
     /**
@@ -234,11 +254,12 @@ public class AuthService {
     private String generateJwtToken(Usuario usuario) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-
+            List<String> roles = usuario.getUsuarioRoles().stream()
+                    .map(usuarioRol -> usuarioRol.getRol().getNombre()) // Ajusta a cómo se llama el campo
+                    .toList();
             return Jwts.builder()
-                    .subject(usuario.getNickname())
-                    .claim("userId", usuario.getIdUsuario())
-                    .claim("email", usuario.getEmail())
+                    .subject(usuario.getIdUsuario())
+                    .claim("roles",roles)
                     .issuedAt(new Date())
                     .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                     .signWith(key)
@@ -255,18 +276,7 @@ public class AuthService {
      * @param token El token JWT a validar
      * @return true si el token es válido, false en caso contrario
      */
-    public boolean validateToken(String token) {
-        try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
-    }
+
 
     /**
      * Reenvía el email de verificación a un usuario no verificado
@@ -307,24 +317,27 @@ public class AuthService {
 
 
     @Transactional
-    public void validarYEnviarCorreoRecuperacion(String idUsuario, String email) {
-        // Validación combinada
+    public void generarTokenYEnviarCorreo(String idUsuario, String email) {
         Usuario usuario = usuarioRepository.findByIdUsuarioAndEmail(idUsuario, email)
-                .orElseThrow(() -> new RuntimeException("Credenciales no coinciden o usuario no existe"));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado o correo incorrecto"));
 
-        // Generar enlace seguro (sin token en BD)
-        String parametrosSeguros = "?id=" + URLEncoder.encode(idUsuario, StandardCharsets.UTF_8) +
-                "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8);
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiracion = LocalDateTime.now().plusMinutes(15);
 
-        String resetUrl = baseUrl + "/restablecer" + parametrosSeguros;
+        usuario.setTokenRecuperacion(token);
+        usuario.setExpiracionToken(expiracion);
 
-        // Enviar correo
+        usuarioRepository.save(usuario);
+
+        String resetUrl = baseUrlFront + "/formulario_recuperacion?token=" + token;
+
         emailService.sendHtmlEmail(
                 email,
                 "Recuperación de Contraseña",
                 construirEmail(usuario.getNombres(), resetUrl)
         );
     }
+
 
     private String construirEmail(String nombre, String url) {
         return String.format("""
@@ -333,7 +346,7 @@ public class AuthService {
                     <h2>¡Hola, %s!</h2>
                     <p>Haz clic para restablecer tu contraseña:</p>
                     <a href="%s">Restablecer ahora</a>
-                    <p><small>Este enlace expira en 1 hora.</small></p>
+                    <p><small>Este enlace expira en 15 minutos.</small></p>
                 </body>
             </html>
             """, nombre, url);
@@ -344,28 +357,34 @@ public class AuthService {
 
 
     @Transactional
-    public void cambiarContrasena(String idUsuario, String email, String nuevaContrasena) {
-        // 1. Busca por ID (único)
+    public void cambiarContrasena(String tokenRecuperacion, String nuevaContrasena) {
+        // Buscar usuario por token
+        Usuario usuario = usuarioRepository.findByTokenRecuperacion(tokenRecuperacion)
+                .orElseThrow(() -> new IllegalArgumentException("Token de recuperación inválido"));
 
-        Usuario usuario = usuarioRepository.findByIdUsuario(idUsuario)
-                .orElseThrow(() -> new RuntimeException("ID no registrado"));
-        // 2. Valida email (opcional)
-        if (!usuario.getEmail().equals(email)) {
-            throw new IllegalArgumentException("El email no coincide con el usuario");
+        // Validar que el token no haya expirado
+        if (usuario.getExpiracionToken() == null || usuario.getExpiracionToken().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Token de recuperación ha expirado");
+        }
+        if (passwordEncoder.matches(nuevaContrasena, usuario.getContrasena())) {
+            throw new IllegalArgumentException("La nueva contraseña no puede ser igual a la anterior");
         }
 
-        // 3. Cambia la contraseña
-        usuario.setContrasena(passwordEncoder.encode(nuevaContrasena));
-        // No necesita save() por @Transactional
+        // Encriptar y guardar nueva contraseña
+        String nuevaContrasenaEncriptada = passwordEncoder.encode(nuevaContrasena);
+        usuario.setContrasena(nuevaContrasenaEncriptada);
+
+        // Limpiar token y expiración
+        usuario.setTokenRecuperacion(null);
+        usuario.setExpiracionToken(null);
+
+        usuarioRepository.save(usuario);
     }
 
 
 
-    /*public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
-    }*/
+
+
+
+
 }

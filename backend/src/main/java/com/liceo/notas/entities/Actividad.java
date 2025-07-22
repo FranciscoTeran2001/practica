@@ -40,13 +40,12 @@ public class Actividad {
     @Column(name = "TIPO_ACTIVIDAD", length = 20, nullable = false)
     private String tipoActividad;
 
-    /**
-     * Fecha en que se realizará o entregará la actividad.
-     * No puede ser nulo.
-     */
-    @Column(name = "FECHA_ACTIVIDAD", nullable = false)
-    private LocalDate fecha;
+    // Reemplazamos FECHA_ACTIVIDAD por dos nuevas fechas
+    @Column(name = "FECHA_INICIO_ENTREGA", nullable = false)
+    private LocalDate fechaInicioEntrega;
 
+    @Column(name = "FECHA_FIN_ENTREGA", nullable = false)
+    private LocalDate fechaFinEntrega;
     /**
      * Descripción detallada de la actividad.
      * Longitud máxima: 200 caracteres.
@@ -54,6 +53,11 @@ public class Actividad {
      */
     @Column(name = "DESCRIPCION", length = 200)
     private String descripcion;
+
+    @Column(name = "TITULO_ACTIVIDAD", length = 20)
+    private String tituloActividad;
+
+
 
     /**
      * Valor máximo o puntaje que puede obtenerse en esta actividad.

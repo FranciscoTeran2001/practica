@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ import java.util.Optional;
  * Utiliza Spring Data JPA para interactuar con la base de datos.
  */
 public interface UsuarioRepository extends JpaRepository<Usuario, String> { // ID es String (idUsuario)
+    Optional<Usuario> findByTokenRecuperacionAndExpiracionTokenAfter(String token, LocalDateTime ahora);
+
 
     /**
      * Busca un usuario por su nickname único.
@@ -31,6 +34,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> { // I
      * @return Lista de usuarios con el estado dado
      */
     List<Usuario> findByEstado(String estado);
+    Optional<Usuario> findByTokenRecuperacion(String tokenRecuperacion);
 
     /**
      * Busca un usuario por su dirección de correo electrónico.
@@ -42,7 +46,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> { // I
 
 
     Optional<Usuario> findByNicknameAndEmail(String nickname, String email);
-    Optional<Usuario> findByEmail(String email);
+
     Optional<Usuario> findByTokenVerificacion(String token);
     // Opcional: Si necesitas validar el email también
     @Query("SELECT u FROM Usuario u WHERE u.idUsuario = :idUsuario AND u.email = :email")

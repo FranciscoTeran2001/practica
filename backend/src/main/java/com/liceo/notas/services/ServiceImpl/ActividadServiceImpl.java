@@ -57,7 +57,7 @@ public class ActividadServiceImpl implements ActividadService {
     @Transactional
     public void eliminarActividad(Integer id) {
         if (!actividadRepository.existsById(id)) {
-            throw new RuntimeException("Actividad no encontrada ");
+            throw new RuntimeException("Actividad no encontrada");
         }
         actividadRepository.deleteById(id);
     }

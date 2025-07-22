@@ -29,6 +29,7 @@ public class AnioLectivoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de años activos si existen
      *         - Código 204 (Sin contenido) si no hay años activos
+     *         -Profesor y administrador pueden ver los años activos
      */
     @GetMapping("/activos")
     public ResponseEntity<List<AnioLectivoDTO>> obtenerAniosActivos() {
@@ -43,6 +44,7 @@ public class AnioLectivoController {
      *
      * @param dto Datos del año lectivo a crear
      * @return ResponseEntity con código 201 (Creado) y el año lectivo creado
+     *  -Admnistrador puede crear años lectivos
      */
     @PostMapping
     public ResponseEntity<AnioLectivoDTO> crear(@RequestBody AnioLectivoDTO dto) {
@@ -57,6 +59,7 @@ public class AnioLectivoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el año lectivo si existe
      *         - Código 404 (No encontrado) si no existe
+     *         -Profesor y administrador pueden ver años lectivos por ID
      */
     @GetMapping("/{id}")
     public ResponseEntity<AnioLectivoDTO> obtenerPorId(@PathVariable Integer id) {
@@ -69,6 +72,7 @@ public class AnioLectivoController {
      * Obtiene todos los años lectivos registrados.
      *
      * @return ResponseEntity con código 200 (OK) y lista completa de años lectivos
+     *        -Profesor y administrador pueden ver todos los años lectivos
      */
     @GetMapping
     public ResponseEntity<List<AnioLectivoDTO>> listarTodos() {
@@ -83,6 +87,7 @@ public class AnioLectivoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el año actualizado si existe
      *         - Código 404 (No encontrado) si no existe
+     *         -Administrador puede actualizar años lectivos
      */
     @PutMapping("/{id}")
     public ResponseEntity<AnioLectivoDTO> actualizar(
@@ -100,6 +105,7 @@ public class AnioLectivoController {
      * @return ResponseEntity con:
      *         - Código 204 (Sin contenido) si la eliminación fue exitosa
      *         - Código 404 (No encontrado) si el año no existe
+     *         -Administrador puede eliminar años lectivos
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

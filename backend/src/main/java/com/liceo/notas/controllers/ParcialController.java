@@ -28,6 +28,7 @@ public class ParcialController {
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y el parcial creado
      * @apiNote El DTO debe incluir nombre, fechas y materia asociada
+     * -Admnistradores pueden crear parciales
      */
     @PostMapping
     public ResponseEntity<ParcialDTO> crear(@RequestBody ParcialDTO dto) {
@@ -42,6 +43,7 @@ public class ParcialController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el parcial si existe
      *         - Código 404 (NOT FOUND) si no existe
+     *         - Administradores y profesores pueden consultar parciales
      */
     @GetMapping("/{id}")
     public ResponseEntity<ParcialDTO> obtenerPorId(@PathVariable Integer id) {
@@ -56,6 +58,7 @@ public class ParcialController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de todos los parciales
      *         - Lista vacía si no hay parciales registrados
+     *         - Administradores y profesores pueden consultar todos los parciales
      */
     @GetMapping
     public ResponseEntity<List<ParcialDTO>> listarTodos() {
@@ -69,6 +72,7 @@ public class ParcialController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de parciales de la materia
      *         - Lista vacía si la materia no tiene parciales
+     *         - Administradores y profesores pueden consultar parciales por materia
      */
     @GetMapping("/materia/{idMateria}")
     public ResponseEntity<List<ParcialDTO>> listarPorMateria(@PathVariable Integer idMateria) {
@@ -83,6 +87,7 @@ public class ParcialController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el parcial actualizado si existe
      *         - Código 404 (NOT FOUND) si el parcial no existe
+     *         - Administradores y profesores pueden actualizar parciales
      */
     @PutMapping("/{id}")
     public ResponseEntity<ParcialDTO> actualizar(
@@ -101,6 +106,7 @@ public class ParcialController {
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      *         - Código 404 (NOT FOUND) si el parcial no existe
      * @apiNote La eliminación puede fallar si el parcial tiene actividades asociadas
+     * * - Administradores
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

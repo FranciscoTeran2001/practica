@@ -21,37 +21,21 @@ public class ActividadController {
     @Autowired
     private ActividadService service;
 
-    /**
-     * Crea una nueva actividad en el sistema.
-     *
-     * @param dto Objeto ActividadDTO con los datos de la actividad a crear
-     * @return ResponseEntity<ActividadDTO> con estado HTTP 201 (CREADO) y la actividad creada,
-     *         incluyendo su ID generado
-     */
     @PostMapping
     public ResponseEntity<ActividadDTO> crear(@RequestBody ActividadDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.crearActividad(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.crearActividad(dto));
     }
 
-    /**
-     * Obtiene todas las actividades asociadas a un parcial específico.
-     *
-     * @param idParcial ID del parcial para filtrar las actividades
-     * @return ResponseEntity<List<ActividadDTO>> con estado HTTP 200 (OK) conteniendo
-     *         la lista de actividades para el parcial especificado
-     */
     @GetMapping("/parcial/{idParcial}")
     public ResponseEntity<List<ActividadDTO>> listarPorParcial(@PathVariable Integer idParcial) {
         return ResponseEntity.ok(service.listarPorParcial(idParcial));
     }
 
-    /**
-     * Elimina una actividad existente del sistema.
-     *
-     * @param id ID de la actividad a eliminar
-     * @return ResponseEntity<Void> con estado HTTP 204 (SIN CONTENIDO) si la eliminación fue exitosa
-     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ActividadDTO> obtenerPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.obtenerPorId(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
         service.eliminarActividad(id);

@@ -1,33 +1,5 @@
-import { 
-  Container,
-  Typography,
-  Paper,
-  Tabs,
-  Tab,
-  Box,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Chip,
-  Avatar,
-  Badge,
-  LinearProgress
-} from '@mui/material';
-import { 
-  CloudUpload, 
-  Assignment, 
-  Class, 
-  Quiz, 
-  Assessment, 
-  Edit,
-  CheckCircle,
-  Pending,
-  Grade,
-  Upload,
-  Description
-} from '@mui/icons-material';
+import { Container, Typography, Paper, Tabs, Tab, Box, Button, List, ListItem, ListItemText, Divider, Chip, Avatar, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { CloudUpload, Assignment, Class, Quiz, Assessment, Edit, CheckCircle, Grade, Upload, Description } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -60,35 +32,26 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 
 const StyledTab = styled(Tab)(({ theme }) => ({
   minHeight: '64px',
-  minWidth: '200px', // Aumenta este valor para hacer las pestañas más anchas
-  width: 'auto', // Permite que las pestañas se expandan según el contenido
-  padding: '6px 16px', // Aumenta el padding horizontal para más espacio
+  minWidth: '200px',
+  width: 'auto',
+  padding: '6px 16px',
   '&.Mui-selected': {
     color: theme.palette.primary.main,
     fontWeight: 'bold'
   }
 }));
 
-const StatusChip = styled(Chip)(({ theme, status }) => ({
+const StatusChip = styled(Chip)(({ theme }) => ({
   fontWeight: 'bold',
-  backgroundColor: status === 'completed' 
-    ? theme.palette.success.light 
-    : status === 'pending' 
-      ? theme.palette.warning.light 
-      : theme.palette.primary.light,
-  color: status === 'completed' 
-    ? theme.palette.success.dark 
-    : status === 'pending' 
-      ? theme.palette.warning.dark 
-      : theme.palette.primary.dark
+  backgroundColor: theme.palette.success.light,
+  color: theme.palette.success.dark
 }));
 
 // Datos de ejemplo para la materia
-const materiaData = {
+const initialMateriaData = {
   id: 1,
   nombre: "Matemáticas Avanzadas",
   profesor: "Ing. Carlos Cerón",
-  progreso: 65,
   tareas: [
     { 
       id: 1, 
@@ -96,7 +59,7 @@ const materiaData = {
       fechaEntrega: "2023-11-15", 
       entregado: true,
       tipo: "Tarea",
-      puntos: 20
+      archivo: "algebra_lineal.pdf"
     },
     { 
       id: 2, 
@@ -104,15 +67,7 @@ const materiaData = {
       fechaEntrega: "2023-11-20", 
       entregado: false,
       tipo: "Proyecto",
-      puntos: 30
-    },
-    { 
-      id: 3, 
-      nombre: "Demostraciones matemáticas", 
-      fechaEntrega: "2023-11-25", 
-      entregado: false,
-      tipo: "Ensayo",
-      puntos: 25
+      archivo: null
     }
   ],
   actividades: [
@@ -121,14 +76,16 @@ const materiaData = {
       tipo: "Participación en clase", 
       fecha: "2023-11-10", 
       completado: true,
-      descripcion: "Participación en discusión de teoremas"
+      descripcion: "Participación en discusión de teoremas",
+      archivo: "participacion.pdf"
     },
     { 
       id: 2, 
       tipo: "Trabajo en equipo", 
       fecha: "2023-11-17", 
       completado: false,
-      descripcion: "Resolver problemas en grupos de 3"
+      descripcion: "Resolver problemas en grupos de 3",
+      archivo: null
     }
   ],
   talleres: [
@@ -136,15 +93,17 @@ const materiaData = {
       id: 1, 
       tema: "Ecuaciones diferenciales", 
       fecha: "2023-11-12", 
-      archivoSubido: false,
-      descripcion: "Resolver 10 ecuaciones diferenciales"
+      archivoSubido: true,
+      descripcion: "Resolver 10 ecuaciones diferenciales",
+      archivo: "ecuaciones_diferenciales.pdf"
     },
     { 
       id: 2, 
       tema: "Análisis vectorial", 
       fecha: "2023-11-19", 
-      archivoSubido: true,
-      descripcion: "Problemas de campos vectoriales"
+      archivoSubido: false,
+      descripcion: "Problemas de campos vectoriales",
+      archivo: null
     }
   ],
   pruebas: [
@@ -152,15 +111,15 @@ const materiaData = {
       id: 1, 
       tema: "Unidad 1 - Fundamentos", 
       fecha: "2023-11-25", 
-      calificacion: 85,
-      porcentaje: 20
+      completado: true,
+      archivo: "prueba_fundamentos.pdf"
     },
     { 
       id: 2, 
       tema: "Unidad 2 - Álgebra", 
       fecha: "2023-12-02", 
-      calificacion: null,
-      porcentaje: 25
+      completado: false,
+      archivo: null
     }
   ],
   examenes: [
@@ -168,15 +127,15 @@ const materiaData = {
       id: 1, 
       tema: "Primer Parcial", 
       fecha: "2023-12-05", 
-      calificacion: null,
-      porcentaje: 30
+      completado: false,
+      archivo: null
     },
     { 
       id: 2, 
       tema: "Segundo Parcial", 
       fecha: "2023-12-15", 
-      calificacion: 78,
-      porcentaje: 35
+      completado: true,
+      archivo: "segundo_parcial.pdf"
     }
   ]
 };
@@ -185,17 +144,72 @@ const ActividadesEstudiante = () => {
   const { id } = useParams();
   const [tabValue, setTabValue] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [currentActivity, setCurrentActivity] = useState(null);
+  const [actividadesState, setActividadesState] = useState(initialMateriaData);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
-  const handleFileChange = (event) => {
+  const handleFileChange = (event, activity) => {
     setSelectedFile(event.target.files[0]);
-    console.log("Archivo seleccionado:", event.target.files[0]);
+    setCurrentActivity(activity);
+    handleFileUpload(activity.type, activity.id, event.target.files[0]);
   };
 
-  const materia = materiaData;
+  const handleFileUpload = (tipo, id, file) => {
+    if (!file) return;
+    
+    setActividadesState(prev => {
+      const newState = {...prev};
+      const fileName = file.name;
+      
+      if (tipo === 'tarea') {
+        newState.tareas = newState.tareas.map(t => 
+          t.id === id ? {...t, entregado: true, archivo: fileName} : t
+        );
+      } else if (tipo === 'taller') {
+        newState.talleres = newState.talleres.map(t => 
+          t.id === id ? {...t, archivoSubido: true, archivo: fileName} : t
+        );
+      } else if (tipo === 'actividad') {
+        newState.actividades = newState.actividades.map(a => 
+          a.id === id ? {...a, completado: true, archivo: fileName} : a
+        );
+      } else if (tipo === 'prueba') {
+        newState.pruebas = newState.pruebas.map(p => 
+          p.id === id ? {...p, completado: true, archivo: fileName} : p
+        );
+      } else if (tipo === 'examen') {
+        newState.examenes = newState.examenes.map(e => 
+          e.id === id ? {...e, completado: true, archivo: fileName} : e
+        );
+      }
+      
+      return newState;
+    });
+    
+    setSelectedFile(null);
+    setCurrentActivity(null);
+  };
+
+  const handleModifyFile = (activity) => {
+    setCurrentActivity(activity);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setCurrentActivity(null);
+  };
+
+  const handleConfirmModify = (event) => {
+    if (event.target.files[0]) {
+      handleFileUpload(currentActivity.type, currentActivity.id, event.target.files[0]);
+    }
+    handleCloseDialog();
+  };
 
   // Función para obtener el icono según el tipo de actividad
   const getActivityIcon = (type) => {
@@ -207,65 +221,36 @@ const ActividadesEstudiante = () => {
     }
   };
 
+  // Función para determinar el tipo de actividad según la pestaña
+  const getActivityType = (tabIndex) => {
+    switch(tabIndex) {
+      case 0: return 'tarea';
+      case 1: return 'actividad';
+      case 2: return 'taller';
+      case 3: return 'prueba';
+      case 4: return 'examen';
+      default: return 'tarea';
+    }
+  };
+
   return (
     <>
       <Navbar3 />
-      <Container
-        maxWidth="xl"
-        sx={{
-          mt: 8,
-          mb: 4,
-          minHeight: 'calc(100vh - 100px)',
-        }}
-      >
+      <Container maxWidth="xl" sx={{ mt: 8, mb: 4, minHeight: 'calc(100vh - 100px)' }}>
         {/* Header con información del curso */}
-        <StyledPaper sx={{ 
-          p: 3, 
-          mb: 3, 
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-        }}>
+        <StyledPaper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
               <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                {materia.nombre}
+                {actividadesState.nombre}
               </Typography>
               <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
-                <Box component="span" sx={{ fontWeight: 'medium' }}>Profesor:</Box> {materia.profesor}
+                <Box component="span" sx={{ fontWeight: 'medium' }}>Profesor:</Box> {actividadesState.profesor}
               </Typography>
             </Box>
-            <Avatar sx={{ 
-              width: 80, 
-              height: 80, 
-              bgcolor: 'primary.main',
-              fontSize: '2rem',
-              fontWeight: 'bold'
-            }}>
-              {materia.nombre.charAt(0)}
+            <Avatar sx={{ width: 80, height: 80, bgcolor: 'primary.main', fontSize: '2rem', fontWeight: 'bold' }}>
+              {actividadesState.nombre.charAt(0)}
             </Avatar>
-          </Box>
-          
-          <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                Progreso del curso: {materia.progreso}%
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                {materia.tareas.filter(t => t.entregado).length}/{materia.tareas.length} tareas completadas
-              </Typography>
-            </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={materia.progreso} 
-              sx={{ 
-                height: 10, 
-                borderRadius: 5,
-                backgroundColor: 'grey.200',
-                '& .MuiLinearProgress-bar': {
-                  borderRadius: 5,
-                  background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)'
-                }
-              }} 
-            />
           </Box>
         </StyledPaper>
 
@@ -274,14 +259,9 @@ const ActividadesEstudiante = () => {
           <Tabs 
             value={tabValue} 
             onChange={handleTabChange} 
-            variant="scrollable"
+            variant="scrollable" 
             scrollButtons="auto"
-            sx={{
-              '& .MuiTabs-indicator': {
-                height: 4,
-                borderRadius: '4px 4px 0 0'
-              }
-            }}
+            sx={{ '& .MuiTabs-indicator': { height: 4, borderRadius: '4px 4px 0 0' } }}
           >
             <StyledTab label="Tareas" icon={<Assignment />} iconPosition="start" />
             <StyledTab label="Actividades" icon={<Class />} iconPosition="start" />
@@ -296,22 +276,16 @@ const ActividadesEstudiante = () => {
           {tabValue === 0 && ( // Tareas
             <Box>
               <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-                <Assignment sx={{ mr: 1, color: 'primary.main' }} /> Tareas Pendientes
+                <Assignment sx={{ mr: 1, color: 'primary.main' }} /> Tareas
               </Typography>
               <List disablePadding>
-                {materia.tareas.map((tarea) => (
+                {actividadesState.tareas.map((tarea) => (
                   <Box key={tarea.id}>
-                    <ListItem sx={{ 
-                      py: 2, 
-                      px: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: '100%'
-                    }}>
+                    <ListItem sx={{ py: 2, px: 0, display: 'flex', alignItems: 'center', width: '100%' }}>
                       <Avatar sx={{ 
                         mr: 2, 
-                        bgcolor: tarea.entregado ? 'success.light' : 'warning.light',
-                        color: tarea.entregado ? 'success.dark' : 'warning.dark'
+                        bgcolor: tarea.entregado ? 'success.light' : 'grey.300',
+                        color: tarea.entregado ? 'success.dark' : 'grey.600'
                       }}>
                         {getActivityIcon(tarea.tipo)}
                       </Avatar>
@@ -324,28 +298,36 @@ const ActividadesEstudiante = () => {
                         secondary={
                           <>
                             <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              {tarea.tipo} • {tarea.puntos} puntos
+                              {tarea.tipo} • Fecha de entrega: {tarea.fechaEntrega}
                             </Typography>
-                            <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              Fecha de entrega: {tarea.fechaEntrega}
-                            </Typography>
+                            {tarea.entregado && tarea.archivo && (
+                              <Typography variant="body2" component="span" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                Archivo enviado: {tarea.archivo}
+                              </Typography>
+                            )}
                           </>
                         }
                         sx={{ flex: '1 1 60%', pr: 2 }}
                       />
                       {tarea.entregado ? (
-                        <StatusChip 
-                          icon={<CheckCircle />} 
-                          label="Entregado" 
-                          status="completed"
-                        />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <StatusChip icon={<CheckCircle />} label="Entregado" />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleModifyFile({...tarea, type: 'tarea'})}
+                            sx={{ mt: 1 }}
+                          >
+                            Modificar
+                          </Button>
+                        </Box>
                       ) : (
-                        <Button
-                          component="label"
-                          variant="contained"
-                          startIcon={<Upload />}
+                        <Button 
+                          component="label" 
+                          variant="contained" 
+                          startIcon={<Upload />} 
                           size="medium"
-                          sx={{
+                          sx={{ 
                             background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
                             boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                             '&:hover': {
@@ -356,7 +338,8 @@ const ActividadesEstudiante = () => {
                           Subir
                           <VisuallyHiddenInput 
                             type="file" 
-                            onChange={handleFileChange}
+                            onChange={(e) => handleFileChange(e, {...tarea, type: 'tarea'})}
+                            accept=".pdf"
                           />
                         </Button>
                       )}
@@ -374,21 +357,15 @@ const ActividadesEstudiante = () => {
                 <Class sx={{ mr: 1, color: 'primary.main' }} /> Actividades en Clase
               </Typography>
               <List disablePadding>
-                {materia.actividades.map((actividad) => (
+                {actividadesState.actividades.map((actividad) => (
                   <Box key={actividad.id}>
-                    <ListItem sx={{ 
-                      py: 2, 
-                      px: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: '100%'
-                    }}>
+                    <ListItem sx={{ py: 2, px: 0, display: 'flex', alignItems: 'center', width: '100%' }}>
                       <Avatar sx={{ 
                         mr: 2, 
-                        bgcolor: actividad.completado ? 'success.light' : 'warning.light',
-                        color: actividad.completado ? 'success.dark' : 'warning.dark'
+                        bgcolor: actividad.completado ? 'success.light' : 'grey.300',
+                        color: actividad.completado ? 'success.dark' : 'grey.600'
                       }}>
-                        {actividad.completado ? <CheckCircle /> : <Pending />}
+                        {actividad.completado ? <CheckCircle /> : <Assignment />}
                       </Avatar>
                       <ListItemText
                         primary={
@@ -399,19 +376,51 @@ const ActividadesEstudiante = () => {
                         secondary={
                           <>
                             <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              {actividad.descripcion}
+                              {actividad.descripcion} • Fecha: {actividad.fecha}
                             </Typography>
-                            <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              Fecha: {actividad.fecha}
-                            </Typography>
+                            {actividad.completado && actividad.archivo && (
+                              <Typography variant="body2" component="span" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                Archivo enviado: {actividad.archivo}
+                              </Typography>
+                            )}
                           </>
                         }
                         sx={{ flex: '1 1 60%', pr: 2 }}
                       />
-                      <StatusChip 
-                        label={actividad.completado ? "Completado" : "Pendiente"} 
-                        status={actividad.completado ? "completed" : "pending"}
-                      />
+                      {actividad.completado ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <StatusChip label="Completado" />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleModifyFile({...actividad, type: 'actividad'})}
+                            sx={{ mt: 1 }}
+                          >
+                            Modificar
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Button 
+                          component="label" 
+                          variant="contained" 
+                          startIcon={<Upload />} 
+                          size="medium"
+                          sx={{ 
+                            background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
+                            }
+                          }}
+                        >
+                          Subir
+                          <VisuallyHiddenInput 
+                            type="file" 
+                            onChange={(e) => handleFileChange(e, {...actividad, type: 'actividad'})}
+                            accept=".pdf"
+                          />
+                        </Button>
+                      )}
                     </ListItem>
                     <Divider sx={{ my: 1 }} />
                   </Box>
@@ -426,19 +435,13 @@ const ActividadesEstudiante = () => {
                 <Edit sx={{ mr: 1, color: 'primary.main' }} /> Talleres Prácticos
               </Typography>
               <List disablePadding>
-                {materia.talleres.map((taller) => (
+                {actividadesState.talleres.map((taller) => (
                   <Box key={taller.id}>
-                    <ListItem sx={{ 
-                      py: 2, 
-                      px: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: '100%'
-                    }}>
+                    <ListItem sx={{ py: 2, px: 0, display: 'flex', alignItems: 'center', width: '100%' }}>
                       <Avatar sx={{ 
                         mr: 2, 
-                        bgcolor: taller.archivoSubido ? 'success.light' : 'warning.light',
-                        color: taller.archivoSubido ? 'success.dark' : 'warning.dark'
+                        bgcolor: taller.archivoSubido ? 'success.light' : 'grey.300',
+                        color: taller.archivoSubido ? 'success.dark' : 'grey.600'
                       }}>
                         <Description />
                       </Avatar>
@@ -451,26 +454,34 @@ const ActividadesEstudiante = () => {
                         secondary={
                           <>
                             <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              {taller.descripcion}
+                              {taller.descripcion} • Fecha: {taller.fecha}
                             </Typography>
-                            <Typography variant="body2" component="span" sx={{ display: 'block' }}>
-                              Fecha: {taller.fecha}
-                            </Typography>
+                            {taller.archivoSubido && taller.archivo && (
+                              <Typography variant="body2" component="span" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                Archivo enviado: {taller.archivo}
+                              </Typography>
+                            )}
                           </>
                         }
                         sx={{ flex: '1 1 60%', pr: 2 }}
                       />
                       {taller.archivoSubido ? (
-                        <StatusChip 
-                          icon={<CheckCircle />} 
-                          label="Entregado" 
-                          status="completed"
-                        />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <StatusChip icon={<CheckCircle />} label="Entregado" />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleModifyFile({...taller, type: 'taller'})}
+                            sx={{ mt: 1 }}
+                          >
+                            Modificar
+                          </Button>
+                        </Box>
                       ) : (
                         <Button
-                          component="label"
-                          variant="contained"
-                          startIcon={<CloudUpload />}
+                          component="label" 
+                          variant="contained" 
+                          startIcon={<CloudUpload />} 
                           size="medium"
                           sx={{
                             background: 'linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%)',
@@ -483,7 +494,8 @@ const ActividadesEstudiante = () => {
                           Subir taller
                           <VisuallyHiddenInput 
                             type="file" 
-                            onChange={handleFileChange}
+                            onChange={(e) => handleFileChange(e, {...taller, type: 'taller'})}
+                            accept=".pdf"
                           />
                         </Button>
                       )}
@@ -495,150 +507,182 @@ const ActividadesEstudiante = () => {
             </Box>
           )}
 
-          {tabValue === 3 && ( // Pestaña de Pruebas
+          {tabValue === 3 && ( // Pruebas
             <Box>
-              <Typography variant="h6" gutterBottom>
-                Pruebas
+              <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                <Quiz sx={{ mr: 1, color: 'primary.main' }} /> Pruebas
               </Typography>
-              <List>
-                {materia.pruebas.map((prueba) => (
-                  <ListItem key={prueba.id} sx={{ py: 2 }}>
-                    <Avatar sx={{ mr: 2, bgcolor: 'secondary.main' }}>
-                      <Assessment />
-                    </Avatar>
-                    <ListItemText
-                      primary={prueba.tema}
-                      secondary={`Fecha: ${prueba.fecha} - Peso: ${prueba.porcentaje}%`}
-                      sx={{ flex: '1 1 auto' }} // Asegura que el texto ocupe el espacio disponible
-                    />
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      minWidth: '150px', // Ancho mínimo para la sección de calificación
-                      justifyContent: 'flex-end' // Alinea los elementos a la derecha
-                    }}>
-                      {prueba.calificacion ? (
-                        <Chip 
-                          label={`${prueba.calificacion}/100`} 
-                          color="primary"
-                          variant="outlined"
-                          sx={{ 
-                            fontWeight: 'bold',
-                            fontSize: '1rem',
-                            mr: 2
-                          }}
-                        />
+              <List disablePadding>
+                {actividadesState.pruebas.map((prueba) => (
+                  <Box key={prueba.id}>
+                    <ListItem sx={{ py: 2, px: 0, display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <Avatar sx={{ mr: 2, bgcolor: 'secondary.main' }}>
+                        <Assessment />
+                      </Avatar>
+                      <ListItemText
+                        primary={
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                            {prueba.tema}
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            <Typography variant="body2">
+                              Fecha: {prueba.fecha}
+                            </Typography>
+                            {prueba.completado && prueba.archivo && (
+                              <Typography variant="body2" component="span" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                Archivo enviado: {prueba.archivo}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                        sx={{ flex: '1 1 auto' }}
+                      />
+                      {prueba.completado ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <StatusChip label="Completado" />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleModifyFile({...prueba, type: 'prueba'})}
+                            sx={{ mt: 1 }}
+                          >
+                            Modificar
+                          </Button>
+                        </Box>
                       ) : (
-                        <StatusChip 
-                          label="Pendiente" 
-                          status="pending" 
-                          sx={{ mr: 2 }}
-                        />
+                        <Button 
+                          component="label" 
+                          variant="contained" 
+                          startIcon={<Upload />} 
+                          size="medium"
+                          sx={{ 
+                            background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
+                            }
+                          }}
+                        >
+                          Subir
+                          <VisuallyHiddenInput 
+                            type="file" 
+                            onChange={(e) => handleFileChange(e, {...prueba, type: 'prueba'})}
+                            accept=".pdf"
+                          />
+                        </Button>
                       )}
-                    </Box>
-                  </ListItem>
+                    </ListItem>
+                    <Divider sx={{ my: 1 }} />
+                  </Box>
                 ))}
               </List>
             </Box>
           )}
 
-          {tabValue === 4 && ( // Pestaña de Exámenes
+          {tabValue === 4 && ( // Exámenes
             <Box>
-              <Typography variant="h6" gutterBottom>
-                Exámenes
+              <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                <Assessment sx={{ mr: 1, color: 'primary.main' }} /> Exámenes
               </Typography>
-              <List>
-                {materia.examenes.map((examen) => (
-                  <ListItem key={examen.id} sx={{ py: 2 }}>
-                    <Avatar sx={{ mr: 2, bgcolor: 'error.main' }}>
-                      <Grade />
-                    </Avatar>
-                    <ListItemText
-                      primary={examen.tema}
-                      secondary={`Fecha: ${examen.fecha} - Peso: ${examen.porcentaje}%`}
-                      sx={{ flex: '1 1 auto' }}
-                    />
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      minWidth: '150px',
-                      justifyContent: 'flex-end'
-                    }}>
-                      {examen.calificacion ? (
-                        <Chip 
-                          label={`${examen.calificacion}/100`} 
-                          color="secondary"
-                          variant="outlined"
-                          sx={{ 
-                            fontWeight: 'bold',
-                            fontSize: '1rem',
-                            mr: 2
-                          }}
-                        />
+              <List disablePadding>
+                {actividadesState.examenes.map((examen) => (
+                  <Box key={examen.id}>
+                    <ListItem sx={{ py: 2, px: 0, display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <Avatar sx={{ mr: 2, bgcolor: 'error.main' }}>
+                        <Grade />
+                      </Avatar>
+                      <ListItemText
+                        primary={
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                            {examen.tema}
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            <Typography variant="body2">
+                              Fecha: {examen.fecha}
+                            </Typography>
+                            {examen.completado && examen.archivo && (
+                              <Typography variant="body2" component="span" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                Archivo enviado: {examen.archivo}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                        sx={{ flex: '1 1 auto' }}
+                      />
+                      {examen.completado ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <StatusChip label="Completado" />
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleModifyFile({...examen, type: 'examen'})}
+                            sx={{ mt: 1 }}
+                          >
+                            Modificar
+                          </Button>
+                        </Box>
                       ) : (
-                        <StatusChip 
-                          label="Pendiente" 
-                          status="pending" 
-                          sx={{ mr: 2 }}
-                        />
+                        <Button 
+                          component="label" 
+                          variant="contained" 
+                          startIcon={<Upload />} 
+                          size="medium"
+                          sx={{ 
+                            background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
+                            }
+                          }}
+                        >
+                          Subir
+                          <VisuallyHiddenInput 
+                            type="file" 
+                            onChange={(e) => handleFileChange(e, {...examen, type: 'examen'})}
+                            accept=".pdf"
+                          />
+                        </Button>
                       )}
-                    </Box>
-                  </ListItem>
+                    </ListItem>
+                    <Divider sx={{ my: 1 }} />
+                  </Box>
                 ))}
               </List>
             </Box>
           )}
         </StyledPaper>
 
-        {selectedFile && (
-          <StyledPaper sx={{ 
-            p: 3, 
-            background: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Description sx={{ mr: 2, color: 'primary.main', fontSize: 40 }} />
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  Archivo seleccionado:
-                </Typography>
-                <Typography variant="body1">
-                  {selectedFile.name}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {(selectedFile.size / 1024).toFixed(2)} KB
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="secondary"
-                onClick={() => setSelectedFile(null)}
-                sx={{ textTransform: 'none' }}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                variant="contained" 
-                color="primary" 
+        {/* Diálogo para modificar archivo */}
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Modificar archivo enviado</DialogTitle>
+          <DialogContent>
+            <Typography gutterBottom>
+              ¿Deseas reemplazar el archivo "{currentActivity?.archivo}"?
+            </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Button
+                component="label"
+                variant="contained"
+                fullWidth
                 startIcon={<CloudUpload />}
-                onClick={() => {
-                  console.log("Subiendo archivo...");
-                  setSelectedFile(null);
-                }}
-                sx={{
-                  background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                  '&:hover': {
-                    boxShadow: '0 6px 8px rgba(0,0,0,0.15)'
-                  }
-                }}
               >
-                Confirmar envío
+                Seleccionar nuevo archivo PDF
+                <VisuallyHiddenInput 
+                  type="file" 
+                  onChange={handleConfirmModify}
+                  accept=".pdf"
+                />
               </Button>
             </Box>
-          </StyledPaper>
-        )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancelar</Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );

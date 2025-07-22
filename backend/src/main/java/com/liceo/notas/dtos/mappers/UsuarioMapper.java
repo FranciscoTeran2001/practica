@@ -3,6 +3,9 @@ package com.liceo.notas.dtos.mappers;
 import com.liceo.notas.dtos.UsuarioDTO;
 import com.liceo.notas.entities.Usuario;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Clase utilitaria para mapear entre entidades Usuario y DTOs UsuarioDTO.
  * Proporciona conversión bidireccional para la gestión de usuarios del sistema.
@@ -33,7 +36,13 @@ public class UsuarioMapper {
         dto.setEmail(entidad.getEmail());
         dto.setEmailVerificado(entidad.isEmailVerificado());
 
+        // Obtener los nombres de roles asignados desde la entidad, no desde dto
+        List<String> roles = entidad.getUsuarioRoles()
+                .stream()
+                .map(ur -> ur.getRol().getNombre())
+                .collect(Collectors.toList());
 
+        dto.setRoles(roles);
 
         // Los roles se manejan en el servicio correspondiente
         return dto;

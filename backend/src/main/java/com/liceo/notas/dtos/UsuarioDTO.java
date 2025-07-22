@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -23,6 +26,8 @@ import java.util.List;
  *   <li>Constructor sin argumentos</li>
  * </ul>
  */
+@Getter
+@Setter
 @Data
 public class UsuarioDTO {
     /**
@@ -87,13 +92,20 @@ public class UsuarioDTO {
      * Cada ID debe corresponder a un rol existente en el sistema.
      * Ejemplo: [1, 3] para roles "ADMIN" y "PROFESOR".
      */
-    private List<Integer> roles;
+    private List<String> roles;
+
+
+
     private boolean mfaHabilitado;
 
     private String email;
     private String mfaSecret;
 
     private boolean emailVerificado;
+
+    private String tokenRecuperacion;
+    private LocalDateTime expiracionToken;
+
 
 
 }

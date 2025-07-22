@@ -29,6 +29,7 @@ public class MateriaController {
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y la materia creada en el cuerpo de la respuesta
      * @apiNote Requiere los datos completos de la materia en el cuerpo de la petición
+     * -Admniistrador
      */
     @PostMapping
     public ResponseEntity<MateriaDTO> crear(@RequestBody MateriaDTO dto) {
@@ -43,6 +44,7 @@ public class MateriaController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y la materia si existe
      *         - Código 404 (NOT FOUND) si no existe
+     *         -Administrador
      */
     @GetMapping("/{id}")
     public ResponseEntity<MateriaDTO> obtenerPorId(@PathVariable Integer id) {
@@ -57,6 +59,7 @@ public class MateriaController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de todas las materias
      *         - Lista vacía si no hay materias registradas
+     *         -Administrador
      */
     @GetMapping
     public ResponseEntity<List<MateriaDTO>> listarTodas() {
@@ -71,6 +74,7 @@ public class MateriaController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y la materia actualizada si existe
      *         - Código 404 (NOT FOUND) si no existe la materia
+     *         -Administrador
      */
     @PutMapping("/{id}")
     public ResponseEntity<MateriaDTO> actualizar(
@@ -91,6 +95,7 @@ public class MateriaController {
      *         - Código 409 (CONFLICT) si la materia no puede eliminarse
      *           (ej: tiene relaciones con otras entidades)
      * @throws RuntimeException Cuando existen restricciones de integridad referencial
+     *  -Administrador
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

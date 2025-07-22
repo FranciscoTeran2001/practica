@@ -85,6 +85,7 @@ export default function LoginPage() {
                 throw new Error(loginData.message || 'Error al iniciar sesión');
             }
 
+
             // Paso 2: Obtener los roles del usuario
             const rolesResponse = await fetch(`${API_BASE_URL}/usuarios-roles/usuario/${loginData.idUsuario}`, {
                 credentials: 'include'
@@ -111,8 +112,6 @@ export default function LoginPage() {
             // Paso 4: Determinar a qué página redirigir según el rol
             const roleNames = rolesDetails.map(role => role.nombre);
 
-            // Guardar los roles en localStorage por si los necesitas en otras partes de la app
-            localStorage.setItem('userRoles', JSON.stringify(roleNames));
 
             // Redirigir según el rol
             if (roleNames.includes('Administrador')) {

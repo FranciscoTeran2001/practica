@@ -1,15 +1,22 @@
 import { Avatar, Paper, Container, Typography, Box, TextField, Button, Alert, OutlinedInput, InputAdornment, IconButton, InputLabel, FormControl } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { useNavigate } from "react-router-dom";
 
 const RestablecerContrasenaFormulario = () => {
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    // Obtener token del query string
+    const query = new URLSearchParams(location.search);
+    const token = query.get("token") || "";
 
     const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -44,10 +51,9 @@ const RestablecerContrasenaFormulario = () => {
         return errors.length > 0 ? errors.join(', ') : '';
     };
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
 
-        // Validación final antes de continuar
         const error = validatePassword(password);
         setPasswordError(error);
 
@@ -56,10 +62,35 @@ const RestablecerContrasenaFormulario = () => {
             return;
         }
 
-        // Si todo está bien, simular éxito
-        setSuccess(true);
-        // Puedes limpiar el campo si quieres
-        setPassword('');
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/restablecer-contrasena`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tokenRecuperacion: token, nuevaContrasena: password }),
+            });
+
+
+            if (!response.ok) {
+                const data = await response.json();
+                setPasswordError(data.message || 'Error al restablecer contraseña');
+                setSuccess(false);
+                return;
+            }
+
+            setSuccess(true);
+            setPassword('');
+            setPasswordError('');
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
+
+
+            setSuccess(true);
+            setPassword('');
+        } catch (err) {
+            setPasswordError('Error de conexión con el servidor');
+            setSuccess(false);
+        }
     }
 
     function handlePasswordChange(event: ChangeEvent<HTMLInputElement>): void {
@@ -144,7 +175,7 @@ const RestablecerContrasenaFormulario = () => {
 
                     {success && (
                         <Alert severity="success" sx={{ mb: 2 }}>
-                            ¡Hemos enviado un enlace de recuperación a tu correo!
+                            Se ha restablecido la contraseña correctamente. Puedes iniciar sesión con tu nueva contraseña.
                         </Alert>
                     )}
 

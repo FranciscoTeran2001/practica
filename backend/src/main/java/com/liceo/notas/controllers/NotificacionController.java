@@ -30,6 +30,7 @@ public class NotificacionController {
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y la notificación creada
      * @apiNote El DTO debe incluir el ID del usuario destinatario, mensaje y otros datos requeridos
+     *  -Profesores y administradores pueden crear notificaciones para cualquier usuario.
      */
     @PostMapping
     public ResponseEntity<NotificacionDTO> crear(@RequestBody NotificacionDTO dto) {
@@ -44,6 +45,7 @@ public class NotificacionController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de notificaciones del usuario
      *         - Lista vacía si el usuario no tiene notificaciones
+     *         -Todos
      */
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<NotificacionDTO>> listarPorUsuario(@PathVariable String idUsuario) {
@@ -57,6 +59,7 @@ public class NotificacionController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de notificaciones de la fecha
      *         - Lista vacía si no hay notificaciones en esa fecha
+     *         - Todos
      */
     @GetMapping("/fecha/{fecha}")
     public ResponseEntity<List<NotificacionDTO>> listarPorFecha(
@@ -71,6 +74,7 @@ public class NotificacionController {
      * @return ResponseEntity con:
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      *         - Código 404 (NOT FOUND) si la notificación no existe
+     *         - Administradores y profesores pueden eliminar cualquier notificación.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

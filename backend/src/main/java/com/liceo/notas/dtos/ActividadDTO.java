@@ -34,13 +34,16 @@ public class ActividadDTO {
      * Fecha en la que se realizará o entregará la actividad.
      * Formato: ISO-8601 (yyyy-MM-dd).
      */
-    private LocalDate fecha;
+    private LocalDate fechaInicioEntrega;
+    private LocalDate fechaFinEntrega;
 
     /**
      * Descripción detallada de la actividad.
      * Incluye instrucciones, requisitos u observaciones importantes.
      */
     private String descripcion;
+
+    private String tituloActividad;
 
     /**
      * Valor máximo o puntaje que puede obtenerse en esta actividad.

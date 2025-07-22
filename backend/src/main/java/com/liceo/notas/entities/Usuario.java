@@ -105,26 +105,18 @@ public class Usuario {
 
     @Column(name = "TOKEN_VERIFICACION", length = 36)
     private String tokenVerificacion;
+
+    @Column(name = "token_recuperacion", length = 255)
+    private String tokenRecuperacion;
+
+    @Column(name = "expiracion_token")
+    private LocalDateTime expiracionToken;  // Para TIMESTAMP WITHOUT TIME ZONE
     /**
      * Lista de roles asociados a este usuario.
      * Relación ManyToMany mapeada a través de la tabla intermedia "USUARIO_ROL".
      * Permite que un usuario tenga múltiples roles (ej: Docente, Estudiante).
      */
-    @ManyToMany
-    @JoinTable(
-            name = "USUARIO_ROL",
-            joinColumns = @JoinColumn(name = "ID_USUARIO"),
-            inverseJoinColumns = @JoinColumn(name = "ID_ROL")
-    )
-
-
-    private List<Rol> roles;
-
-    /**
-     * Lista de relaciones entre este usuario y los cursos en los que participa.
-     * Relación One-to-Many con la entidad UsuarioCurso (tabla intermedia).
-     * - mappedBy: indica que la relación está gestionada desde la entidad UsuarioCurso.
-     */
     @OneToMany(mappedBy = "usuario")
-    private List<UsuarioCurso> cursos;
+    private List<UsuarioRol> usuarioRoles;
+
 }

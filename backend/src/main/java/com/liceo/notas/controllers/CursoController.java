@@ -28,6 +28,7 @@ public class CursoController {
      * @param dto Datos del curso a crear (en formato DTO)
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y el curso creado en el cuerpo
+     *         - Adminsitrador creará el curso con los datos proporcionados
      */
     @PostMapping
     public ResponseEntity<CursoDTO> crear(@RequestBody CursoDTO dto) {
@@ -42,6 +43,7 @@ public class CursoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el curso si existe
      *         - Código 404 (NOT FOUND) si no existe
+     *         -Administrador y profesores pueden consultar los cursos
      */
     @GetMapping("/{id}")
     public ResponseEntity<CursoDTO> obtenerPorId(@PathVariable Integer id) {
@@ -55,6 +57,7 @@ public class CursoController {
      *
      * @return ResponseEntity con código 200 (OK) y lista de cursos
      *         (la lista puede estar vacía si no hay cursos)
+     *         - Administrador y profesores pueden consultar todos los cursos
      */
     @GetMapping
     public ResponseEntity<List<CursoDTO>> listarTodos() {
@@ -67,6 +70,7 @@ public class CursoController {
      * @param idAnioLectivo ID del año lectivo
      * @return ResponseEntity con código 200 (OK) y lista de cursos
      *         del año lectivo especificado
+     *         - Administrador y profesores pueden consultar los cursos por año lectivo
      */
     @GetMapping("/por-anio/{idAnioLectivo}")
     public ResponseEntity<List<CursoDTO>> listarPorAnioLectivo(@PathVariable Integer idAnioLectivo) {
@@ -77,6 +81,7 @@ public class CursoController {
      * Obtiene los cursos de años lectivos activos.
      *
      * @return ResponseEntity con código 200 (OK) y lista de cursos activos
+     *        - Administrador y profesores pueden consultar los cursos activos
      */
     @GetMapping("/activos")
     public ResponseEntity<List<CursoDTO>> listarCursosActivos() {
@@ -91,6 +96,7 @@ public class CursoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y el curso actualizado si existe
      *         - Código 404 (NOT FOUND) si el curso no existe
+     *         - Administrador
      */
     @PutMapping("/{id}")
     public ResponseEntity<CursoDTO> actualizar(
@@ -108,6 +114,7 @@ public class CursoController {
      * @return ResponseEntity con:
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      *         - Código 404 (NOT FOUND) si el curso no existía
+     *         - Solo el administrador
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {

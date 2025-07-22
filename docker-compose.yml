@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=trust  # Solo para desarrollo
+    ports:
+      - "5432:5432"   # <<<<< Aquí expones el puerto a tu PC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./estructura.sql:/docker-entrypoint-initdb.d/estructura.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-container
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_MAIL_USERNAME=${GMAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${GMAIL_APP_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+
+volumes:
+  postgres_data:

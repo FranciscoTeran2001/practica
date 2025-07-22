@@ -27,6 +27,7 @@ public class CalificacionController {
      * @param dto Objeto CalificacionDTO con los datos de la calificación a registrar
      * @return ResponseEntity con estado HTTP 201 (CREADO) y la calificación registrada
      *         incluyendo su ID generado
+     *         - Administradores y profesores pueden registrar calificaciones
      */
     @PostMapping
     public ResponseEntity<CalificacionDTO> registrar(@RequestBody CalificacionDTO dto) {
@@ -40,6 +41,7 @@ public class CalificacionController {
      * @param idUsuario Identificador único del usuario (estudiante)
      * @return ResponseEntity con estado HTTP 200 (OK) y lista de calificaciones
      *         del usuario solicitado
+     *         -Administradores y profesores pueden consultar calificaciones de estudiantes
      */
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<CalificacionDTO>> listarPorUsuario(@PathVariable String idUsuario) {
@@ -52,6 +54,7 @@ public class CalificacionController {
      * @param idActividad ID de la actividad académica
      * @return ResponseEntity con estado HTTP 200 (OK) y lista de calificaciones
      *         para la actividad solicitada
+     *         -Profesores y administradores pueden consultar calificaciones por actividad
      */
     @GetMapping("/actividad/{idActividad}")
     public ResponseEntity<List<CalificacionDTO>> listarPorActividad(@PathVariable Integer idActividad) {
@@ -64,6 +67,7 @@ public class CalificacionController {
      * @param id ID de la calificación a actualizar
      * @param dto Objeto CalificacionDTO con los nuevos datos de la calificación
      * @return ResponseEntity con estado HTTP 200 (OK) y la calificación actualizada
+     *        -Solo administradores y profesores pueden actualizar calificaciones
      */
     @PutMapping("/{id}")
     public ResponseEntity<CalificacionDTO> actualizar(

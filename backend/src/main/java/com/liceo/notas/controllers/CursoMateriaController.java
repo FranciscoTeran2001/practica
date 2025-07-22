@@ -26,6 +26,7 @@ public class CursoMateriaController {
      * @param dto Objeto CursoMateriaDTO con los IDs del curso y materia a asociar
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y la asociación creada
+     *         Administra la creación de asociaciones entre cursos y materias.
      */
     @PostMapping
     public ResponseEntity<CursoMateriaDTO> asociar(@RequestBody CursoMateriaDTO dto) {
@@ -39,6 +40,7 @@ public class CursoMateriaController {
      * @param idCurso ID del curso a consultar
      * @return ResponseEntity con código 200 (OK) y lista de asociaciones
      *         que incluyen el curso especificado
+     *         Administrar y proveer acceso a las materias asociadas a un curso.
      */
     @GetMapping("/curso/{idCurso}")
     public ResponseEntity<List<CursoMateriaDTO>> listarMateriasPorCurso(@PathVariable Integer idCurso) {
@@ -51,6 +53,7 @@ public class CursoMateriaController {
      * @param idMateria ID de la materia a consultar
      * @return ResponseEntity con código 200 (OK) y lista de asociaciones
      *         que incluyen la materia especificada
+     *         - Administra y provee acceso a los cursos asociados a una materia.
      */
     @GetMapping("/materia/{idMateria}")
     public ResponseEntity<List<CursoMateriaDTO>> listarCursosPorMateria(@PathVariable Integer idMateria) {
@@ -63,6 +66,7 @@ public class CursoMateriaController {
      * @param idCurso ID del curso de la asociación
      * @param idMateria ID de la materia de la asociación
      * @return ResponseEntity con código 204 (NO CONTENT) si la eliminación fue exitosa
+     * -Administra la eliminación de asociaciones entre cursos y materias.
      */
     @DeleteMapping("/curso/{idCurso}/materia/{idMateria}")
     public ResponseEntity<Void> eliminarAsociacion(

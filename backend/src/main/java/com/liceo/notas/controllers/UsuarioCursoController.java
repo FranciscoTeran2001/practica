@@ -28,6 +28,7 @@ public class UsuarioCursoController {
      * @return ResponseEntity con:
      *         - Código 201 (CREATED) y la asociación creada
      * @apiNote El DTO debe incluir los IDs válidos de usuario y curso
+     *       - Solo administradores pueden crear asociaciones
      */
     @PostMapping
     public ResponseEntity<UsuarioCursoDTO> asociar(@RequestBody UsuarioCursoDTO dto) {
@@ -42,6 +43,7 @@ public class UsuarioCursoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de asociaciones que incluyen al usuario
      *         - Lista vacía si el usuario no tiene cursos asociados
+     *         - Administrador y Profesor pueden ver los cursos asociados a un usuario
      */
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<UsuarioCursoDTO>> listarCursosPorUsuario(@PathVariable String idUsuario) {
@@ -55,6 +57,8 @@ public class UsuarioCursoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de asociaciones que incluyen el curso
      *         - Lista vacía si el curso no tiene usuarios asociados
+     *         *         - Administrador y Profesor pueden ver los usuarios asociados a un curso
+     *
      */
     @GetMapping("/curso/{idCurso}")
     public ResponseEntity<List<UsuarioCursoDTO>> listarUsuariosPorCurso(@PathVariable Integer idCurso) {
@@ -69,6 +73,7 @@ public class UsuarioCursoController {
      * @return ResponseEntity con:
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      * @apiNote No retorna error si la asociación no existía
+     * *         - Solo administradores pueden eliminar asociaciones
      */
     @DeleteMapping("/usuario/{idUsuario}/curso/{idCurso}")
     public ResponseEntity<Void> eliminarAsociacion(
@@ -87,6 +92,7 @@ public class UsuarioCursoController {
      *         - Código 200 (OK) y valor booleano:
      *           - true si existe la asociación
      *           - false si no existe
+     *
      */
     @GetMapping("/existe/usuario/{idUsuario}/curso/{idCurso}")
     public ResponseEntity<Boolean> existeAsociacion(
@@ -101,6 +107,7 @@ public class UsuarioCursoController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista completa de todas las asociaciones
      *         - Lista vacía si no hay asociaciones registradas
+     *         -Administrador puede ver todas las asociaciones
      */
     @GetMapping
     public ResponseEntity<List<UsuarioCursoDTO>> listarTodasLasAsociaciones() {

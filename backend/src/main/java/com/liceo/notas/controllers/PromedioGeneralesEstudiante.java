@@ -27,6 +27,7 @@ public class PromedioGeneralesEstudiante {
      * @param dto Objeto PromedioGeneralesEstudianteDTO con los datos del promedio a crear
      * @return ResponseEntity<PromedioGeneralesEstudianteDTO> con estado HTTP 201 (CREADO) y el promedio creado,
      *         incluyendo su ID generado
+     *         -Administrado y Profesor pueden crear promedios generales de estudiantes.
      */
     @PostMapping
     public ResponseEntity<PromedioGeneralesEstudianteDTO> crear(@RequestBody PromedioGeneralesEstudianteDTO dto) {
@@ -40,6 +41,7 @@ public class PromedioGeneralesEstudiante {
      * @param id  ID del promedio a actualizar
      * @param dto Objeto PromedioGeneralesEstudianteDTO con los nuevos datos
      * @return ResponseEntity<PromedioGeneralesEstudianteDTO> con estado HTTP 200 (OK) y el promedio actualizado
+     * -Admnistrador y Profesor pueden actualizar promedios generales de estudiantes.
      */
     @PutMapping("/{id}")
     public ResponseEntity<PromedioGeneralesEstudianteDTO> actualizar(
@@ -54,6 +56,7 @@ public class PromedioGeneralesEstudiante {
      *
      * @param id ID del promedio a eliminar
      * @return ResponseEntity<Void> con estado HTTP 204 (SIN CONTENIDO) si la eliminación fue exitosa
+     *  * -Administrado y Profesor pueden eliminar promedios generales de estudiantes.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
@@ -66,6 +69,7 @@ public class PromedioGeneralesEstudiante {
      *
      * @param id ID del promedio a obtener
      * @return ResponseEntity<PromedioGeneralesEstudianteDTO> con estado HTTP 200 (OK) y el promedio encontrado
+     * -Todos
      */
     @GetMapping("/{id}")
     public ResponseEntity<PromedioGeneralesEstudianteDTO> obtenerPorId(@PathVariable Integer id) {
@@ -77,6 +81,7 @@ public class PromedioGeneralesEstudiante {
      *
      * @return ResponseEntity<List<PromedioGeneralesEstudianteDTO>> con estado HTTP 200 (OK) conteniendo
      *         la lista completa de promedios generales
+     *         Todos
      */
     @GetMapping
     public ResponseEntity<List<PromedioGeneralesEstudianteDTO>> listarTodos() {
@@ -90,6 +95,7 @@ public class PromedioGeneralesEstudiante {
      * @param idCurso   ID del curso en el cual se desea obtener el promedio
      * @return ResponseEntity<PromedioGeneralesEstudianteDTO> con estado HTTP 200 (OK) conteniendo
      *         el promedio general del estudiante en ese curso
+     *         * -Todos
      */
     @GetMapping("/estudiante/{idUsuario}/curso/{idCurso}")
     public ResponseEntity<PromedioGeneralesEstudianteDTO> obtenerPorEstudianteYCurso(

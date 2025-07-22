@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useState, type FormEvent } from "react";
 
 const RecuperacionContrasena = () => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const [email, setEmail] = useState('');
     const [errorEmail, setErrorEmail] = useState('');
     const [errorCedula, setErrorCedula] = useState('');
@@ -22,35 +23,57 @@ const RecuperacionContrasena = () => {
         setCedula(value);
     };
 
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-        e.preventDefault();
-        if (!cedula) {
-            setErrorCedula('Ingrese la cédula');
-            return;
-        } else if (!/^\d{10}$/.test(cedula)) {
-            setErrorCedula('Debe tener 10 dígitos exactos');
+    // Validaciones previas
+    if (!cedula) {
+        setErrorCedula('Ingrese la cédula');
+        return;
+    } else if (!/^\d{10}$/.test(cedula)) {
+        setErrorCedula('Debe tener 10 dígitos exactos');
+        return;
+    }
+    if (!email) {
+        setErrorEmail('Por favor ingresa tu correo electrónico');
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setErrorEmail('Ingresa un correo electrónico válido');
+        return;
+    }
+
+    setErrorEmail('');
+    setErrorCedula('');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/solicitar-recuperacion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                idUsuario: cedula,  
+                email: email
+            })
+        });
+
+        if (!response.ok) {
+            // Capturar error y mostrar mensaje
+            const data = await response.json();
+            setSuccess(false);
+            setErrorEmail(data.message || 'Error al enviar la solicitud');
             return;
         }
 
-        // Validación básica
-        if (!email) {
-            setErrorEmail('Por favor ingresa tu correo electrónico');
-            return;
-        }
-
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setErrorEmail('Ingresa un correo electrónico válido');
-            return;
-        }
-
-
-        // Si pasa la validación
-        setErrorEmail('');
-        setErrorCedula('');
-        console.log("Correo enviado a:", email);
+        // Si todo fue bien
         setSuccess(true);
-    };
+    } catch (error) {
+        setSuccess(false);
+        setErrorEmail('Error al conectar con el servidor');
+    }
+};
+
 
 
     return (

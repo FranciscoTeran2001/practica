@@ -1,15 +1,25 @@
 package com.liceo.notas.controllers;
 
 import com.liceo.notas.dtos.*;
+import com.liceo.notas.entities.Usuario;
+import com.liceo.notas.repositories.UsuarioRepository;
 import com.liceo.notas.services.AuthService;
+import com.liceo.notas.services.JwtService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,20 +27,46 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
+    private final UsuarioRepository usuarioRepository;
 
-    public AuthController(AuthService authService) {
+
+    public AuthController(AuthService authService,JwtService jwtService, UsuarioRepository usuarioRepository) {
         this.authService = authService;
+        this.jwtService = jwtService;
+        this.usuarioRepository = usuarioRepository;
+
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+        LoginResponse loginResponse = authService.login(request, response);
+        return ResponseEntity.ok(loginResponse);
     }
 
+
     @PostMapping("/verify-mfa")
-    public MfaVerificationResponse verifyMfaCode(@RequestBody MfaVerificationRequest request) {
-        return authService.verifyMfaCode(request);
+    public ResponseEntity<MfaVerificationResponse> verifyMfaCode(@RequestBody MfaVerificationRequest request) {
+        MfaVerificationResponse mfaResponse = authService.verifyMfaCode(request);
+
+        if (!mfaResponse.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mfaResponse);
+        }
+
+        ResponseCookie cookie = ResponseCookie.from("jwt", mfaResponse.getToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofHours(1))
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(mfaResponse);
     }
+
+
 
     @GetMapping("/verify-email")
     public ResponseEntity<Map<String, Object>> verifyEmail(@RequestParam String token) {
@@ -69,41 +105,84 @@ public class AuthController {
     }
 
     @PostMapping("/solicitar-recuperacion")
-    public ResponseEntity<?> solicitarRecuperacion(
-            @RequestBody UsuarioDTO request) {
-
-        authService.validarYEnviarCorreoRecuperacion(request.getIdUsuario(), request.getEmail());
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Si los datos son correctos, recibirás un correo"
-        ));
+    public ResponseEntity<?> solicitarRecuperacion(@RequestBody UsuarioDTO request) {
+        try {
+            authService.generarTokenYEnviarCorreo(request.getIdUsuario(), request.getEmail());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Si los datos son correctos, recibirás un correo"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
+
+
 
     @PostMapping("/restablecer-contrasena")
     public ResponseEntity<?> restablecerContrasena(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
         String nuevaContrasena = request.get("nuevaContrasena");
-        String idUsuario = request.get("idUsuario");
-        authService.cambiarContrasena(idUsuario,email, nuevaContrasena);
+        String tokenRecuperacion = request.get("tokenRecuperacion"); // <-- agrega este campo
+
+        try {
+            authService.cambiarContrasena(tokenRecuperacion, nuevaContrasena);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Contraseña actualizada exitosamente"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+
+
+    @PostMapping("/validate-token")
+    public ResponseEntity<Map<String, Object>> validateToken(@CookieValue(name = "jwt", required = false) String token) {
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Token no proporcionado"
+            ));
+        }
+
+        boolean esValido = jwtService.validarToken(token);
+
+        if (!esValido) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Token inválido o expirado"
+            ));
+        }
+        List<String> roles = jwtService.extraerRoles(token);
+
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Contraseña actualizada exitosamente"
+                "message", "Token válido",
+                "roles", roles
         ));
     }
 
-    @Controller  // Usa @Controller en lugar de @RestController para vistas
-    @RequestMapping("/restablecer")
-    public class RecuperacionController {
+    @GetMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0) // <= Esto elimina la cookie
+                .sameSite("Lax")
+                .build();
 
-        @GetMapping
-        public String mostrarFormularioRestablecimiento(
-                @RequestParam String id,
-                @RequestParam String email,
-                Model model) {
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-            model.addAttribute("idUsuario", id);
-            model.addAttribute("email", email);
-            return "form-restablecimiento";  // Nombre de tu plantilla HTML/Thymeleaf
-        }
+        return ResponseEntity.ok("Sesión cerrada");
     }
+
+
 }

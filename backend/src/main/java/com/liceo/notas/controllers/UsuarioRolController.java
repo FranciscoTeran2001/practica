@@ -29,6 +29,7 @@ public class UsuarioRolController {
      *         - Código 201 (CREATED) y la asignación creada
      * @apiNote El DTO debe incluir IDs válidos de usuario (String) y rol (Integer)
      * @throws IllegalArgumentException Si los IDs no existen o la asignación ya existe
+     *         - Solo administradores pueden asignar roles a usuarios
      */
     @PostMapping
     public ResponseEntity<UsuarioRolDTO> asignarRol(@RequestBody UsuarioRolDTO dto) {
@@ -43,6 +44,7 @@ public class UsuarioRolController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de asignaciones del usuario
      *         - Lista vacía si el usuario no tiene roles asignados
+     *         - Solo administradores pueden consultar roles de usuarios
      */
     @GetMapping("/usuario/{idUsuario}")
     public ResponseEntity<List<UsuarioRolDTO>> listarRolesPorUsuario(@PathVariable String idUsuario) {
@@ -56,6 +58,7 @@ public class UsuarioRolController {
      * @return ResponseEntity con:
      *         - Código 200 (OK) y lista de asignaciones del rol
      *         - Lista vacía si el rol no tiene usuarios asignados
+     *         - Solo administradores pueden consultar usuarios por rol
      */
     @GetMapping("/rol/{idRol}")
     public ResponseEntity<List<UsuarioRolDTO>> listarUsuariosPorRol(@PathVariable Integer idRol) {
@@ -70,6 +73,7 @@ public class UsuarioRolController {
      * @return ResponseEntity con:
      *         - Código 204 (NO CONTENT) si la eliminación fue exitosa
      * @apiNote No genera error si la asignación no existía (operación idempotente)
+     *        - Solo administradores pueden eliminar asignaciones de roles
      */
     @DeleteMapping("/usuario/{idUsuario}/rol/{idRol}")
     public ResponseEntity<Void> eliminarAsignacion(

@@ -13,25 +13,37 @@ import { Navbar3 } from '../components';
 import DownloadIcon from '@mui/icons-material/Download';
 import GradingIcon from '@mui/icons-material/Grading';
 import { useTheme, useMediaQuery } from '@mui/material';
+import { useEffect, useState } from 'react';
+
+// Definición de tipos
+type Materia = {
+  id: number;
+  nombreMateria: string;
+};
+
+type Nota = {
+  periodo: string;
+  [key: string]: number | string; // Permite dinámicamente cualquier materia como clave
+};
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
     backgroundColor: theme.palette.success.main,
     color: theme.palette.common.white,
     fontWeight: 'bold',
-    fontSize: '1.2rem', // Aumentado
-    padding: '16px 24px', // Aumentado
+    fontSize: '1.2rem',
+    padding: '16px 24px',
     [theme.breakpoints.down('sm')]: {
-      fontSize: '1rem', // Aumentado
-      padding: '12px 16px' // Aumentado
+      fontSize: '1rem',
+      padding: '12px 16px'
     }
   },
   [`&.${tableCellClasses.body}`]: {
-    fontSize: '1.1rem', // Aumentado
-    padding: '16px 24px', // Aumentado
+    fontSize: '1.1rem',
+    padding: '16px 24px',
     [theme.breakpoints.down('sm')]: {
-      fontSize: '1rem', // Aumentado
-      padding: '12px 16px' // Aumentado
+      fontSize: '1rem',
+      padding: '12px 16px'
     }
   },
 }));
@@ -46,7 +58,7 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:last-child td, &:last-child th': {
     border: 0,
   },
-  height: '60px' // Aumentado
+  height: '60px'
 }));
 
 const HighlightedTableRow = styled(TableRow)(({ theme }) => ({
@@ -57,35 +69,137 @@ const HighlightedTableRow = styled(TableRow)(({ theme }) => ({
   '&:hover': {
     backgroundColor: theme.palette.success.light + '60',
   },
-  height: '65px' // Aumentado
+  height: '65px'
 }));
 
-function createData(
-  periodo: string,
-  matematicas: number | string,
-  historia: number | string,
-  ciencias: number | string,
-  educacionFisica: number | string,
-) {
-  return { periodo, matematicas, historia, ciencias, educacionFisica };
-}
-
-const rows = [
-  createData('Parcial 1', 9.5, 8.7, 9.2, 10),
-  createData('Parcial 2', 8.9, 9.3, 9.8, 9.5),
-  createData('Parcial 3', 9.7, 9.1, 9.5, 10),
-  createData('Promedio', 9.4, 9.0, 9.5, 9.8),
-  createData('Comportamiento', 'A', '', '', ''),
-  createData('Promedio General', 9.4, '', '', ''),
-];
-
-const handleGeneratePDF = () => {
-  console.log('Generando PDF de notas...');
-};
+const SummaryTableCell = styled(TableCell)(({ theme }) => ({
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
+  padding: '16px 24px',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1rem',
+    padding: '12px 16px'
+  },
+  backgroundColor: theme.palette.success.light + '20',
+  borderBottom: 'none'
+}));
 
 const CalificacionesEstudiante = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [notas, setNotas] = useState<Nota[]>([]);
+  const [comportamiento, setComportamiento] = useState<string>('');
+  const [promedioGeneral, setPromedioGeneral] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Obtener materias desde tu backend Spring Boot
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/materias`, {
+          credentials: 'include' // Importante para las cookies con CORS
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const materiasData = await response.json();
+        setMaterias(materiasData);
+        
+        // Simular datos de notas (deberías reemplazar esto con tu API real)
+        const { notasSimuladas, comportamiento, promedioGeneral } = generarNotasSimuladas(materiasData);
+        setNotas(notasSimuladas);
+        setComportamiento(comportamiento);
+        setPromedioGeneral(promedioGeneral);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error al obtener datos:', err);
+        setError('Error al cargar los datos. Por favor intenta nuevamente.');
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Función para generar datos simulados (reemplazar con tu API real)
+  const generarNotasSimuladas = (materias: Materia[]): {
+    notasSimuladas: Nota[];
+    comportamiento: string;
+    promedioGeneral: string;
+  } => {
+    const periodos = ['Parcial 1', 'Parcial 2', 'Parcial 3'];
+    
+    // Crear notas para cada parcial
+    const notasParciales = periodos.map(periodo => {
+      const nota: Nota = { periodo };
+      materias.forEach(materia => {
+        // Generar una nota aleatoria entre 7 y 10 para cada materia
+        nota[materia.nombreMateria] = (Math.random() * 3 + 7).toFixed(1);
+      });
+      return nota;
+    });
+    
+    // Calcular promedios por materia
+    const promedio: Nota = { periodo: 'Promedio' };
+    materias.forEach(materia => {
+      const suma = notasParciales.reduce((acc, curr) => 
+        acc + parseFloat(curr[materia.nombreMateria] as string), 0);
+      promedio[materia.nombreMateria] = (suma / notasParciales.length).toFixed(1);
+    });
+    
+    // Comportamiento (solo una nota independiente)
+    const comportamiento = 'A'; // Puedes cambiarlo por el valor real o aleatorio
+    
+    // Promedio general (solo una nota)
+    const sumaPromedios = materias.reduce((acc, materia) => 
+      acc + parseFloat(promedio[materia.nombreMateria] as string), 0);
+    const promedioGeneral = (sumaPromedios / materias.length).toFixed(1);
+    
+    return {
+      notasSimuladas: [...notasParciales, promedio],
+      comportamiento,
+      promedioGeneral
+    };
+  };
+
+  const handleGeneratePDF = () => {
+    console.log('Generando PDF de notas...');
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar3 />
+        <Box sx={{ p: 4, textAlign: 'center', mt: 10 }}>
+          <Typography variant="h6">Cargando calificaciones...</Typography>
+        </Box>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar3 />
+        <Box sx={{ p: 4, textAlign: 'center', mt: 10 }}>
+          <Typography variant="h6" color="error">{error}</Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => window.location.reload()}
+            sx={{ mt: 2 }}
+          >
+            Reintentar
+          </Button>
+        </Box>
+      </>
+    );
+  }
 
   return (
     <>
@@ -133,11 +247,12 @@ const CalificacionesEstudiante = () => {
             </Typography>
           </Box>
           
+          {/* Tabla principal de calificaciones */}
           <Box sx={{ 
             width: '100%',
             overflowX: 'auto',
             '-webkit-overflow-scrolling': 'touch',
-            mb: 3
+            mb: 4
           }}>
             <TableContainer 
               component={Paper}
@@ -145,36 +260,81 @@ const CalificacionesEstudiante = () => {
                 border: '1px solid',
                 borderColor: 'success.light',
                 borderRadius: 2,
-                minWidth: '800px' // Aumentado considerablemente
+                minWidth: '800px'
               }}
             >
               <Table aria-label="customized table" sx={{ minWidth: isMobile ? '800px' : '100%' }}>
                 <TableHead>
                   <TableRow>
                     <StyledTableCell sx={{ width: '25%' }}>Periodo</StyledTableCell>
-                    <StyledTableCell align="right" sx={{ width: '18%' }}>Matemáticas</StyledTableCell>
-                    <StyledTableCell align="right" sx={{ width: '18%' }}>Historia</StyledTableCell>
-                    <StyledTableCell align="right" sx={{ width: '18%' }}>Ciencias</StyledTableCell>
-                    <StyledTableCell align="right" sx={{ width: '18%' }}>Educ. Física</StyledTableCell>
+                    {materias.map(materia => (
+                      <StyledTableCell 
+                        key={materia.id} 
+                        align="right" 
+                        sx={{ width: `${75 / materias.length}%` }}
+                      >
+                        {materia.nombreMateria}
+                      </StyledTableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, index) => {
-                    const isHighlighted = ['Promedio', 'Comportamiento', 'Promedio General'].includes(row.periodo);
+                  {notas.map((row, index) => {
+                    const isHighlighted = row.periodo === 'Promedio';
                     const TableRowComponent = isHighlighted ? HighlightedTableRow : StyledTableRow;
                     
                     return (
-                      <TableRowComponent key={row.periodo}>
+                      <TableRowComponent key={`${row.periodo}-${index}`}>
                         <StyledTableCell component="th" scope="row">
                           {row.periodo}
                         </StyledTableCell>
-                        <StyledTableCell align="right">{row.matematicas}</StyledTableCell>
-                        <StyledTableCell align="right">{row.historia}</StyledTableCell>
-                        <StyledTableCell align="right">{row.ciencias}</StyledTableCell>
-                        <StyledTableCell align="right">{row.educacionFisica}</StyledTableCell>
+                        {materias.map(materia => (
+                          <StyledTableCell key={`${materia.id}-${row.periodo}`} align="right">
+                            {row[materia.nombreMateria] || ''}
+                          </StyledTableCell>
+                        ))}
                       </TableRowComponent>
                     );
                   })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+
+          {/* Tabla de resumen (Comportamiento y Promedio General) */}
+          <Box sx={{ 
+            mb: 4,
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <TableContainer 
+              component={Paper}
+              sx={{
+                border: '1px solid',
+                borderColor: 'success.light',
+                borderRadius: 2,
+                maxWidth: '500px',
+                width: '100%'
+              }}
+            >
+              <Table>
+                <TableBody>
+                  <TableRow>
+                    <SummaryTableCell component="th" scope="row" sx={{ width: '60%' }}>
+                      Comportamiento:
+                    </SummaryTableCell>
+                    <SummaryTableCell align="right" sx={{ width: '40%' }}>
+                      {comportamiento}
+                    </SummaryTableCell>
+                  </TableRow>
+                  <TableRow>
+                    <SummaryTableCell component="th" scope="row">
+                      Promedio General:
+                    </SummaryTableCell>
+                    <SummaryTableCell align="right">
+                      {promedioGeneral}
+                    </SummaryTableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
